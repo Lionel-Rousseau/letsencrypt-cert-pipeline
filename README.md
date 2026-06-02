@@ -108,7 +108,7 @@ export INFOMANIAK_API_TOKEN="$(
 /usr/local/sbin/deploy-cert-to-freebox
 ```
 
-Vérification externe :
+Vérification externe manuelle :
 
 ```bash
 echo | openssl s_client \
@@ -154,11 +154,6 @@ Webmail                                    443    8d           WARN
 
 Code de retour : `0` OK · `1` WARN (< 30 jours) · `2` CRIT (< 14 jours) ou erreur.
 
-Intégration cron :
-
-```cron
-0 8 * * 1 HOSTS_FILE=/root/.secrets/cert-audit.hosts /usr/local/sbin/audit-cert-expiry.sh
-```
 
 Les seuils sont configurables :
 
