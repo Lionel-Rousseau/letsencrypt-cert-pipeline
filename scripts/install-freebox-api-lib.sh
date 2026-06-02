@@ -9,7 +9,7 @@ fi
 mkdir -p /opt/freebox-api
 chmod 750 /opt/freebox-api
 
-curl -L \
+curl -fsSL \
   https://github.com/nbanb/fbx-delta-nba_bash_api.sh/raw/nbanb-freebox-api/fbx-delta-nba_bash_api.sh \
   -o /opt/freebox-api/fbx-delta-nba_bash_api.sh
 
