@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -eo pipefail
 
 ENV_FILE="${ENV_FILE:-/root/.secrets/freebox/freebox-cert.env}"
 LIB="${FREEBOX_API_LIB:-/opt/freebox-api/fbx-delta-nba_bash_api.sh}"
@@ -29,7 +29,8 @@ fi
 
 source "$ENV_FILE"
 
-# The Freebox API library is not fully compatible with strict 'set -e' during sourcing.
+# The Freebox API library uses unbound variables and returns non-zero on load —
+# both set -e and set -u must be disabled during sourcing.
 set +e
 source "$LIB"
 LIB_RC=$?
