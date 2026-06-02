@@ -95,10 +95,10 @@ Vérifier :
 domain_list
 ```
 
-Il faut voir :
+Le champ `rsa` indique le nombre de jours de validité restants du certificat importé. La ligne doit ressembler à :
 
 ```text
-custom rsa: 89
+owner: user   type: custom   rsa: <jours>   id default: mysite.example.com
 ```
 
 Si le certificat externe reste `*.fbxos.fr`, vérifier que le domaine custom est bien défini comme domaine par défaut dans Freebox OS.
