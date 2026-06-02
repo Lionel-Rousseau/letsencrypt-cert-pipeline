@@ -212,4 +212,10 @@ Le `.gitignore` exclut `*.env` et `*.ini`. Les fichiers `.example` du dossier `c
 
 ---
 
+## Licence
+
+MIT — voir [LICENSE](LICENSE).
+
+---
+
 *L'anonymisation des exemples, la mise en forme de la documentation et le script `audit-cert-expiry.sh` ont été réalisés avec l'assistance de Claude (Anthropic). Le code opérationnel, l'architecture et les choix techniques sont de l'auteur.*
