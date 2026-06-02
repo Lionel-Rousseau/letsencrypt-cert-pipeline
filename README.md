@@ -31,17 +31,19 @@ letsencrypt-cert-pipeline/
 │   ├── infomaniak.ini.example
 │   └── cert-audit.hosts.example
 ├── scripts/
-│   ├── install-prereqs.sh
-│   ├── install-freebox-api-lib.sh
-│   ├── authorize-freebox-app.sh
-│   ├── certbot-renew-infomaniak
-│   ├── deploy-cert-to-freebox
-│   ├── check-freebox-cert
-│   └── audit-cert-expiry.sh
+│   ├── install-prereqs.sh         # setup ponctuel
+│   ├── install-freebox-api-lib.sh # setup ponctuel
+│   ├── authorize-freebox-app.sh   # setup ponctuel
+│   ├── certbot-renew-infomaniak   # installé dans sbin/, appelé par cron
+│   ├── deploy-cert-to-freebox     # installé dans sbin/, appelé par cron
+│   ├── check-freebox-cert         # installé dans sbin/, appelé par cron
+│   └── audit-cert-expiry.sh       # audit à la demande
 └── docs/
     ├── OPERATING_PROCEDURE.md
     └── TROUBLESHOOTING.md
 ```
+
+Les scripts destinés à être installés dans `/usr/local/sbin/` et appelés en tant que commandes système n'ont pas d'extension (convention Unix). Les scripts à usage ponctuel conservent `.sh`.
 
 ## Installation
 
@@ -53,9 +55,13 @@ sudo scripts/install-prereqs.sh
 
 ### Librairie Freebox API
 
+Télécharge [fbx-delta-nba_bash_api.sh](https://github.com/nbanb/fbx-delta-nba_bash_api.sh) depuis le dépôt d'origine et l'installe dans `/opt/freebox-api/`.
+
 ```bash
 sudo scripts/install-freebox-api-lib.sh
 ```
+
+> Le script télécharge un fichier Bash tiers sans vérification de signature. Consulter le dépôt source avant exécution dans un environnement sensible.
 
 ### Secrets
 
@@ -88,12 +94,12 @@ export INFOMANIAK_API_TOKEN="$(
 )"
 
 /opt/certbot-infomaniak/bin/certbot certonly \
-  --cert-name mysite.example.com \
+  --cert-name home.example.tld \
   --authenticator dns-infomaniak \
   --dns-infomaniak-propagation-seconds 600 \
   --key-type rsa \
   --rsa-key-size 2048 \
-  -d mysite.example.com
+  -d home.example.tld
 ```
 
 ## Déploiement
@@ -106,8 +112,8 @@ Vérification externe :
 
 ```bash
 echo | openssl s_client \
-  -connect "mysite.example.com:1234" \
-  -servername "mysite.example.com" \
+  -connect "home.example.tld:1688" \
+  -servername "home.example.tld" \
   2>/dev/null \
 | openssl x509 -noout -subject -issuer -dates -serial
 ```
@@ -127,7 +133,7 @@ vi /root/.secrets/cert-audit.hosts
 Format :
 
 ```
-mysite.example.com:1234:Freebox OS
+home.example.tld:1688:Freebox OS
 mail.example.tld:443:Webmail
 ```
 
@@ -185,8 +191,21 @@ Ne jamais versionner les fichiers réels :
 
 Le `.gitignore` exclut `*.env` et `*.ini`. Les fichiers `.example` du dossier `config/` ne correspondent pas à ces patterns et sont versionnés normalement.
 
+## Dépendances externes
+
+| Composant | Source | Licence | Rôle |
+|---|---|---|---|
+| `fbx-delta-nba_bash_api.sh` | [nbanb/fbx-delta-nba_bash_api.sh](https://github.com/nbanb/fbx-delta-nba_bash_api.sh) | GPLv3 | Bibliothèque Bash d'accès à l'API Freebox OS |
+| `certbot-dns-infomaniak` | [Infomaniak/certbot-dns-infomaniak](https://github.com/Infomaniak/certbot-dns-infomaniak) | Apache-2.0 | Plugin Certbot pour le challenge DNS-01 via Infomaniak |
+
+`fbx-delta-nba_bash_api.sh` expose des fonctions non documentées de l'API Freebox OS. Le script `install-freebox-api-lib.sh` la télécharge depuis le dépôt d'origine — vérifier l'intégrité du fichier après téléchargement si l'environnement l'exige.
+
 ## Limites
 
 - Le script ne supprime pas le domaine custom existant avant l'import (comportement volontairement non-destructif).
 - La vérification TLS depuis le LAN échoue souvent à cause du NAT loopback — tester depuis l'extérieur.
 - RSA uniquement, ECDSA non supporté côté Freebox pour l'instant.
+
+---
+
+*L'anonymisation des exemples, la mise en forme de la documentation et le script `audit-cert-expiry.sh` ont été réalisés avec l'assistance de Claude (Anthropic). Le code opérationnel, l'architecture et les choix techniques sont de l'auteur.*
