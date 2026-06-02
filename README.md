@@ -118,6 +118,13 @@ echo | openssl s_client \
 | openssl x509 -noout -subject -issuer -dates -serial
 ```
 
+Les logs de déploiement sont écrits dans `/var/log/freebox-cert/` — un fichier par exécution, horodaté :
+
+```bash
+ls -lt /var/log/freebox-cert/
+tail -50 /var/log/freebox-cert/deploy-$(ls -t /var/log/freebox-cert/ | head -1)
+```
+
 ## Audit multi-hôtes
 
 Vérifie l'expiration de tous les certificats TLS du périmètre en une commande.
