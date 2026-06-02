@@ -1,7 +1,5 @@
-# Certificate audit host list
-# format: host:port:label
-# port defaults to 443 if omitted
-# label is used for display only
+# Certificate audit host list format: host:port:label
+# port defaults to 443 if omitted, label is used for display only
 
 mysite.example.com:1234:Freebox OS
 mail.example.tld:443:Mail / HTTPS
