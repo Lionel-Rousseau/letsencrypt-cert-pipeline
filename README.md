@@ -205,6 +205,7 @@ Le `.gitignore` exclut `*.env` et `*.ini`. Les fichiers `.example` du dossier `c
 - Le script ne supprime pas le domaine custom existant avant l'import (comportement volontairement non-destructif).
 - La vérification TLS depuis le LAN échoue souvent à cause du NAT loopback — tester depuis l'extérieur.
 - RSA uniquement, ECDSA non supporté côté Freebox pour l'instant.
+- Les secrets sont stockés sous `/root/.secrets/` — adapté à une machine LAN dédiée à cet usage. Sur une infrastructure multi-utilisateurs, préférer un utilisateur système dédié avec accès sudo limité aux seules commandes nécessaires.
 
 ---
 
