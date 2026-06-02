@@ -122,7 +122,7 @@ echo | openssl s_client \
 
 Vérifie l'expiration de tous les certificats TLS du périmètre en une commande.
 
-Créer le fichier d'inventaire :
+Créer le fichier d'inventaire (optionnel) :
 
 ```bash
 cp config/cert-audit.hosts.example /root/.secrets/cert-audit.hosts
@@ -189,7 +189,7 @@ Ne jamais versionner les fichiers réels :
 /root/.secrets/freebox/freebox-cert.env
 ```
 
-Le `.gitignore` exclut `*.env` et `*.ini`. Les fichiers `.example` du dossier `config/` ne correspondent pas à ces patterns et sont versionnés normalement.
+Le `.gitignore` exclut `*.env` et `*.ini`. Les fichiers `.example` du dossier `config/` ne correspondent pas à ces fichiers et sont versionnés normalement.
 
 ## Dépendances externes
 
@@ -198,14 +198,14 @@ Le `.gitignore` exclut `*.env` et `*.ini`. Les fichiers `.example` du dossier `c
 | `fbx-delta-nba_bash_api.sh` | [nbanb/fbx-delta-nba_bash_api.sh](https://github.com/nbanb/fbx-delta-nba_bash_api.sh) | GPLv3 | Bibliothèque Bash d'accès à l'API Freebox OS |
 | `certbot-dns-infomaniak` | [Infomaniak/certbot-dns-infomaniak](https://github.com/Infomaniak/certbot-dns-infomaniak) | Apache-2.0 | Plugin Certbot pour le challenge DNS-01 via Infomaniak |
 
-`fbx-delta-nba_bash_api.sh` expose des fonctions non documentées de l'API Freebox OS. Le script `install-freebox-api-lib.sh` la télécharge depuis le dépôt d'origine — vérifier l'intégrité du fichier après téléchargement si l'environnement l'exige.
+`fbx-delta-nba_bash_api.sh` expose des fonctions non documentées de l'API Freebox OS. Le script `install-freebox-api-lib.sh` la télécharge depuis le dépôt d'origine. Vérifier l'intégrité du fichier après téléchargement si l'environnement l'exige.
 
 ## Limites
 
 - Le script ne supprime pas le domaine custom existant avant l'import (comportement volontairement non-destructif).
-- La vérification TLS depuis le LAN échoue souvent à cause du NAT loopback — tester depuis l'extérieur.
+- La vérification TLS depuis le LAN échoue souvent à cause du NAT loopback, il est préferrable de tester depuis l'extérieur.
 - RSA uniquement, ECDSA non supporté côté Freebox pour l'instant.
-- Les secrets sont stockés sous `/root/.secrets/` — adapté à une machine LAN dédiée à cet usage. Sur une infrastructure multi-utilisateurs, préférer un utilisateur système dédié avec accès sudo limité aux seules commandes nécessaires.
+- Les secrets sont stockés sous `/root/.secrets/` ce qui est acceptable à une machine LAN dédiée à cet usage. Sur une infrastructure multi-utilisateurs, préférer un utilisateur système dédié avec accès sudo limité aux seules commandes nécessaires.
 
 ---
 
