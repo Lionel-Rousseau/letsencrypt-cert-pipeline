@@ -1,4 +1,3 @@
 # Infomaniak API token for certbot-dns-infomaniak
 # Do not commit the real file.
-# Required format:
 dns_infomaniak_token = REPLACE_WITH_INFOMANIAK_API_TOKEN
