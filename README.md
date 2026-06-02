@@ -94,12 +94,12 @@ export INFOMANIAK_API_TOKEN="$(
 )"
 
 /opt/certbot-infomaniak/bin/certbot certonly \
-  --cert-name home.example.tld \
+  --cert-name mysite.example.tld \
   --authenticator dns-infomaniak \
   --dns-infomaniak-propagation-seconds 600 \
   --key-type rsa \
   --rsa-key-size 2048 \
-  -d home.example.tld
+  -d mysite.example.tld
 ```
 
 ## Déploiement
@@ -112,8 +112,8 @@ Vérification externe :
 
 ```bash
 echo | openssl s_client \
-  -connect "home.example.tld:1688" \
-  -servername "home.example.tld" \
+  -connect "mysite.example.tld:1234" \
+  -servername "mysite.example.tld" \
   2>/dev/null \
 | openssl x509 -noout -subject -issuer -dates -serial
 ```
@@ -133,7 +133,7 @@ vi /root/.secrets/cert-audit.hosts
 Format :
 
 ```
-home.example.tld:1688:Freebox OS
+mysite.example.tld:1234:Freebox OS
 mail.example.tld:443:Webmail
 ```
 
