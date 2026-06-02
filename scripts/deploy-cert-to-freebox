@@ -1,0 +1,183 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ENV_FILE="${ENV_FILE:-/root/.secrets/freebox/freebox-cert.env}"
+LIB="${FREEBOX_API_LIB:-/opt/freebox-api/fbx-delta-nba_bash_api.sh}"
+LOG_DIR="${LOG_DIR:-/var/log/freebox-cert}"
+TS="$(date '+%Y-%m-%d_%H-%M-%S')"
+LOG_FILE="${LOG_DIR}/deploy-${TS}.log"
+
+mkdir -p "$LOG_DIR"
+chmod 750 "$LOG_DIR"
+
+exec > >(tee -a "$LOG_FILE") 2>&1
+
+debug=0
+pretty=1
+
+echo "[INFO] Start Freebox certificate deployment at $(date -Is)"
+
+if [[ ! -r "$ENV_FILE" ]]; then
+  echo "[ERROR] Missing env file: $ENV_FILE"
+  exit 1
+fi
+
+if [[ ! -r "$LIB" ]]; then
+  echo "[ERROR] Missing Freebox API library: $LIB"
+  exit 1
+fi
+
+source "$ENV_FILE"
+
+# The Freebox API library is not fully compatible with strict 'set -e' during sourcing.
+set +e
+source "$LIB"
+LIB_RC=$?
+set -e
+
+if [[ "$LIB_RC" -ne 0 ]]; then
+  echo "[ERROR] Failed to source Freebox API library, rc=$LIB_RC"
+  exit 1
+fi
+
+: "${FREEBOX_APP_ID:?missing FREEBOX_APP_ID}"
+: "${FREEBOX_APP_TOKEN:?missing FREEBOX_APP_TOKEN}"
+: "${FREEBOX_DOMAIN:?missing FREEBOX_DOMAIN}"
+: "${LE_CERT_NAME:?missing LE_CERT_NAME}"
+: "${FREEBOX_KEY_TYPE:=rsa}"
+: "${FREEBOX_HOST:=$FREEBOX_DOMAIN}"
+: "${FREEBOX_PORT:=443}"
+
+CERT_DIR="/etc/letsencrypt/live/${LE_CERT_NAME}"
+CERT_PEM="${CERT_DIR}/cert.pem"
+KEY_PEM="${CERT_DIR}/privkey.pem"
+CHAIN_PEM="${CERT_DIR}/chain.pem"
+
+echo "[INFO] Domain: ${FREEBOX_DOMAIN}"
+echo "[INFO] Cert dir: ${CERT_DIR}"
+echo "[INFO] Key type: ${FREEBOX_KEY_TYPE}"
+
+for f in "$CERT_PEM" "$KEY_PEM" "$CHAIN_PEM"; do
+  if [[ ! -s "$f" ]]; then
+    echo "[ERROR] Missing or empty file: $f"
+    exit 1
+  fi
+done
+
+echo "[INFO] Local certificate:"
+openssl x509 -in "$CERT_PEM" -noout -subject -issuer -dates -serial
+
+echo "[INFO] Checking cert/key match"
+
+if [[ "$FREEBOX_KEY_TYPE" != "rsa" ]]; then
+  echo "[ERROR] This script currently expects RSA keys only."
+  exit 1
+fi
+
+CERT_MOD="$(openssl x509 -noout -modulus -in "$CERT_PEM" 2>/dev/null | openssl md5)"
+KEY_MOD="$(openssl rsa -noout -modulus -in "$KEY_PEM" 2>/dev/null | openssl md5)"
+
+if [[ "$CERT_MOD" != "$KEY_MOD" ]]; then
+  echo "[ERROR] Certificate and private key do not match"
+  exit 1
+fi
+
+echo "[INFO] Login Freebox API"
+
+set +e
+login_freebox "$FREEBOX_APP_ID" "$FREEBOX_APP_TOKEN" --access
+LOGIN_RC=$?
+set -e
+
+echo "[INFO] login_freebox rc=${LOGIN_RC}"
+
+if [[ "$LOGIN_RC" -ne 0 ]]; then
+  echo "[ERROR] Freebox API login failed"
+  exit 1
+fi
+
+echo "[INFO] Freebox API login OK"
+
+echo "[INFO] Current domains:"
+set +e
+domain_list
+DOMAIN_LIST_RC=$?
+set -e
+echo "[INFO] domain_list rc=${DOMAIN_LIST_RC}"
+
+# Non destructive workflow:
+# The domain must already exist in Freebox OS or be creatable through the API.
+# We do not delete/recreate it, to avoid breaking a working old certificate.
+echo "[INFO] Ensuring domain exists: ${FREEBOX_DOMAIN}"
+set +e
+domain_add id="$FREEBOX_DOMAIN"
+DOMAIN_ADD_RC=$?
+set -e
+echo "[INFO] domain_add rc=${DOMAIN_ADD_RC} (non-fatal if domain already exists)"
+
+echo "[INFO] Adding certificate to domain: ${FREEBOX_DOMAIN}"
+
+set +e
+domain_addcert \
+  id="$FREEBOX_DOMAIN" \
+  key_type="$FREEBOX_KEY_TYPE" \
+  cert_pem="$CERT_PEM" \
+  key_pem="$KEY_PEM" \
+  intermediates="$CHAIN_PEM"
+ADDCERT_RC=$?
+set -e
+
+echo "[INFO] domain_addcert rc=${ADDCERT_RC}"
+
+if [[ "$ADDCERT_RC" -ne 0 ]]; then
+  echo "[ERROR] domain_addcert failed"
+  exit 1
+fi
+
+if declare -F domain_setdefault >/dev/null 2>&1; then
+  echo "[INFO] Setting default domain: ${FREEBOX_DOMAIN}"
+  set +e
+  domain_setdefault id="$FREEBOX_DOMAIN"
+  SETDEFAULT_RC=$?
+  set -e
+  echo "[INFO] domain_setdefault rc=${SETDEFAULT_RC}"
+else
+  echo "[WARN] domain_setdefault function not available, skipping"
+fi
+
+echo "[INFO] Domains after deployment:"
+set +e
+domain_list
+set -e
+
+echo "[INFO] Verifying remote certificate on ${FREEBOX_HOST}:${FREEBOX_PORT}"
+
+if REMOTE_CERT="$(
+  timeout 10 bash -c "
+    echo | openssl s_client \
+      -connect '${FREEBOX_HOST}:${FREEBOX_PORT}' \
+      -servername '${FREEBOX_DOMAIN}' \
+      2>/dev/null \
+    | openssl x509 -noout -subject -issuer -dates -serial
+  "
+)"; then
+  echo "$REMOTE_CERT"
+
+  LOCAL_SERIAL="$(openssl x509 -in "$CERT_PEM" -noout -serial | cut -d= -f2)"
+  REMOTE_SERIAL="$(echo "$REMOTE_CERT" | awk -F= '/^serial=/ {print $2}')"
+
+  if [[ -n "$REMOTE_SERIAL" && "$LOCAL_SERIAL" == "$REMOTE_SERIAL" ]]; then
+    echo "[OK] Freebox now serves the expected certificate"
+  else
+    echo "[WARN] Remote certificate does not match local certificate yet"
+    echo "[WARN] Local serial : $LOCAL_SERIAL"
+    echo "[WARN] Remote serial: ${REMOTE_SERIAL:-unknown}"
+    echo "[WARN] Check from an external machine:"
+    echo "       echo | openssl s_client -connect ${FREEBOX_DOMAIN}:${FREEBOX_PORT} -servername ${FREEBOX_DOMAIN} 2>/dev/null | openssl x509 -noout -subject -issuer -dates -serial"
+  fi
+else
+  echo "[WARN] Could not verify remote certificate from this host"
+  echo "[WARN] This may be normal from LAN due to NAT loopback"
+fi
+
+echo "[INFO] End deployment at $(date -Is)"

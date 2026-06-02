@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+INFOMANIAK_CREDENTIALS="${INFOMANIAK_CREDENTIALS:-/root/.secrets/certbot/infomaniak.ini}"
+CERTBOT_BIN="${CERTBOT_BIN:-/opt/certbot-infomaniak/bin/certbot}"
+DEPLOY_HOOK="${DEPLOY_HOOK:-/usr/local/sbin/deploy-cert-to-freebox}"
+
+export INFOMANIAK_API_TOKEN="$(
+  awk -F'= *' '/dns_infomaniak_token/ {print $2}' "$INFOMANIAK_CREDENTIALS"
+)"
+
+if [[ "${1:-}" == "--dry-run" ]]; then
+  exec "$CERTBOT_BIN" renew \
+    --dns-infomaniak-propagation-seconds 600 \
+    "$@"
+else
+  exec "$CERTBOT_BIN" renew \
+    --dns-infomaniak-propagation-seconds 600 \
+    --deploy-hook "$DEPLOY_HOOK" \
+    "$@"
+fi

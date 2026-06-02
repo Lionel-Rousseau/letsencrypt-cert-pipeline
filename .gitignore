@@ -1,0 +1,13 @@
+# Secrets — keep only example templates
+*.env
+*.ini
+*.hosts
+
+# Logs
+*.log
+logs/
+var/
+
+# Editor/system files
+.DS_Store
+*.swp
