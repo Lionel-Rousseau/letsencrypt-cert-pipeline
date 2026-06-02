@@ -148,7 +148,7 @@ Exemple de sortie :
 ```
 HOST                                       PORT   EXPIRES IN   STATUS
 ────────────────────────────────────────   ────   ──────────   ──────
-Freebox OS                                 1688   72d          OK
+Freebox OS                                 1234   72d          OK
 Webmail                                    443    8d           WARN
 ```
 
@@ -202,7 +202,7 @@ Le `.gitignore` exclut `*.env` et `*.ini`. Les fichiers `.example` du dossier `c
 
 ## Limites
 
-- Le script ne supprime pas le domaine custom existant avant l'import (comportement volontairement non-destructif).
+- Le remplacement d'un certificat existant nécessite de supprimer puis recréer le domaine Freebox — l'API n'expose pas d'endpoint de mise à jour. Le script gère ce cas automatiquement.
 - La vérification TLS depuis le LAN échoue souvent à cause du NAT loopback, il est préferrable de tester depuis l'extérieur.
 - RSA uniquement, ECDSA non supporté côté Freebox pour l'instant.
 - Les secrets sont stockés sous `/root/.secrets/` ce qui est acceptable à une machine LAN dédiée à cet usage. Sur une infrastructure multi-utilisateurs, préférer un utilisateur système dédié avec accès sudo limité aux seules commandes nécessaires.

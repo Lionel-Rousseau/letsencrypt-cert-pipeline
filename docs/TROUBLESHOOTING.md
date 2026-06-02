@@ -73,6 +73,20 @@ Le script `deploy-cert-to-freebox` désactive temporairement `set -e` autour du 
 Le port externe Freebox OS peut ne pas être joignable depuis le LAN à cause du NAT loopback.
 Tester depuis une machine externe.
 
+## domain_addcert retourne une erreur "exists"
+
+L'API Freebox expose `domain/owned/{id}/import_cert/` en POST uniquement — il n'existe pas d'endpoint de mise à jour. Tenter d'importer un certificat RSA sur un domaine qui en a déjà un retourne une erreur "exists".
+
+Le script `deploy-cert-to-freebox` gère ce cas en supprimant puis recréant le domaine avant chaque import :
+
+```bash
+domain_del id="mysite.example.com"
+domain_add id="mysite.example.com"
+domain_addcert id="mysite.example.com" key_type="rsa" ...
+```
+
+Si l'erreur persiste en mode manuel, vérifier que `domain_del` a bien retourné 0 avant de relancer `domain_add`.
+
 ## Mauvais certificat encore visible
 
 Vérifier :

@@ -105,15 +105,29 @@ DOMAIN_LIST_RC=$?
 set -e
 echo "[INFO] domain_list rc=${DOMAIN_LIST_RC}"
 
-# Non destructive workflow:
-# The domain must already exist in Freebox OS or be creatable through the API.
-# We do not delete/recreate it, to avoid breaking a working old certificate.
-echo "[INFO] Ensuring domain exists: ${FREEBOX_DOMAIN}"
+# The Freebox API endpoint (domain/owned/{id}/import_cert/) is a POST — it creates,
+# it does not update. Calling domain_addcert on a domain that already has an RSA cert
+# returns an "exists" error. The only reliable way to replace a cert is:
+# domain_del → domain_add → domain_addcert.
+# domain_del is non-fatal: if the domain does not exist yet, the error is ignored.
+
+echo "[INFO] Resetting domain: ${FREEBOX_DOMAIN}"
+set +e
+domain_del id="$FREEBOX_DOMAIN"
+DOMAIN_DEL_RC=$?
+set -e
+echo "[INFO] domain_del rc=${DOMAIN_DEL_RC} (non-fatal if domain did not exist)"
+
 set +e
 domain_add id="$FREEBOX_DOMAIN"
 DOMAIN_ADD_RC=$?
 set -e
-echo "[INFO] domain_add rc=${DOMAIN_ADD_RC} (non-fatal if domain already exists)"
+echo "[INFO] domain_add rc=${DOMAIN_ADD_RC}"
+
+if [[ "$DOMAIN_ADD_RC" -ne 0 ]]; then
+  echo "[ERROR] domain_add failed"
+  exit 1
+fi
 
 echo "[INFO] Adding certificate to domain: ${FREEBOX_DOMAIN}"
 
