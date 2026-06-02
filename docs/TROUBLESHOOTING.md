@@ -65,8 +65,9 @@ source /opt/freebox-api/fbx-delta-nba_bash_api.sh
 
 ## Script bloqué sur detect_term_bg_color
 
-La librairie Freebox peut retourner non-zéro au chargement à cause de `read -t`.
-Le script `deploy-cert-to-freebox` désactive temporairement `set -e` autour du `source`.
+La librairie Freebox utilise des variables non initialisées et retourne non-zéro 
+au chargement. Le script `deploy-cert-to-freebox` désactive `set -e` autour du 
+`source` et n'utilise pas `set -u` pour cette raison.
 
 ## openssl depuis le LAN retourne connection refused
 
