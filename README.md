@@ -1,6 +1,7 @@
 # Let's Encrypt TLS Pipeline : Certbot DNS-01 → Freebox OS
 
 Renouvellement automatique d'un certificat Let's Encrypt et déploiement vers Freebox OS, sans intervention manuelle.
+Code issu d'un cas réel d'exploitation, anonymisé et adapté pour publication.
 
 ```
 Certbot (DNS-01 via Infomaniak)
