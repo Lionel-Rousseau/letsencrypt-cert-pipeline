@@ -75,12 +75,12 @@ export INFOMANIAK_API_TOKEN="$(
 )"
 
 /opt/certbot-infomaniak/bin/certbot certonly \
-  --cert-name home.example.tld \
+  --cert-name mysite.example.com \
   --authenticator dns-infomaniak \
   --dns-infomaniak-propagation-seconds 600 \
   --key-type rsa \
   --rsa-key-size 2048 \
-  -d home.example.tld
+  -d mysite.example.com
 ```
 
 ## 9. Déployer dans la Freebox
@@ -93,8 +93,8 @@ export INFOMANIAK_API_TOKEN="$(
 
 ```bash
 echo | openssl s_client \
-  -connect "home.example.tld:1688" \
-  -servername "home.example.tld" \
+  -connect "mysite.example.com:1234" \
+  -servername "mysite.example.com" \
   2>/dev/null \
 | openssl x509 -noout -subject -issuer -dates -serial
 ```

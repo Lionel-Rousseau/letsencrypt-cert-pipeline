@@ -33,18 +33,18 @@ Utiliser :
 /opt/certbot-infomaniak/bin/certbot certonly \
   --dry-run \
   --debug-challenges \
-  --cert-name home.example.tld \
+  --cert-name mysite.example.com \
   --authenticator dns-infomaniak \
   --dns-infomaniak-propagation-seconds 600 \
-  -d home.example.tld
+  -d mysite.example.com
 ```
 
 Pendant la pause :
 
 ```bash
-dig TXT _acme-challenge.home.example.tld @nsany1.infomaniak.com
-dig TXT _acme-challenge.home.example.tld @nsany2.infomaniak.com
-dig TXT _acme-challenge.home.example.tld
+dig TXT _acme-challenge.mysite.example.com @nsany1.infomaniak.com
+dig TXT _acme-challenge.mysite.example.com @nsany2.infomaniak.com
+dig TXT _acme-challenge.mysite.example.com
 ```
 
 ## Freebox API invalid_token

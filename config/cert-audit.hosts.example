@@ -3,7 +3,7 @@
 # port defaults to 443 if omitted
 # label is used for display only
 
-home.example.tld:1688:Freebox OS
+mysite.example.com:1234:Freebox OS
 mail.example.tld:443:Mail / HTTPS
 vpn.example.tld:443:VPN gateway
 nas.example.tld:5001:NAS admin
