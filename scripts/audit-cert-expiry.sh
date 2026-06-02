@@ -12,21 +12,10 @@ else
   RED=''; YELLOW=''; GREEN=''; RESET=''
 fi
 
-if [[ ! -r "$HOSTS_FILE" ]]; then
-  printf '[ERROR] Hosts file not readable: %s\n' "$HOSTS_FILE" >&2
-  exit 1
-fi
+check_host() {
+  local host="$1" port="${2:-443}" label="${3:-$1}"
 
-worst=0
-
-printf '%-42s %-6s %-12s %s\n' "HOST" "PORT" "EXPIRES IN" "STATUS"
-printf '%-42s %-6s %-12s %s\n' "────────────────────────────────────────" "────" "──────────" "──────"
-
-while IFS=: read -r host port label _rest; do
-  [[ -z "${host:-}" || "${host:0:1}" == '#' ]] && continue
-  port="${port:-443}"
-  label="${label:-$host}"
-
+  local end_date
   end_date="$(
     timeout "$TIMEOUT" openssl s_client \
       -connect "${host}:${port}" \
@@ -40,9 +29,10 @@ while IFS=: read -r host port label _rest; do
   if [[ -z "$end_date" ]]; then
     printf '%-42s %-6s %-12s %s\n' "$label" "$port" "-" "ERROR (unreachable or no cert)"
     worst=2
-    continue
+    return
   fi
 
+  local end_ts now_ts days_left tag
   end_ts="$(date -d "$end_date" +%s)"
   now_ts="$(date +%s)"
   days_left="$(( (end_ts - now_ts) / 86400 ))"
@@ -59,8 +49,60 @@ while IFS=: read -r host port label _rest; do
 
   printf '%-42s %-6s %-12s ' "$label" "$port" "${days_left}d"
   printf "${tag}\n"
+}
 
-done < "$HOSTS_FILE"
+worst=0
+
+printf '%-42s %-6s %-12s %s\n' "HOST" "PORT" "EXPIRES IN" "STATUS"
+printf '%-42s %-6s %-12s %s\n' "────────────────────────────────────────" "────" "──────────" "──────"
+
+if [[ "${1:-}" =~ ^(-h|--help|\?)$ ]]; then
+  cat <<EOF
+Usage: $(basename "$0") [host[:port[:label]] ...]
+
+Without arguments, reads the inventory file (default: \$HOSTS_FILE).
+With arguments, ignores the inventory file and audits only the given hosts.
+
+Arguments:
+  host[:port[:label]]   port defaults to 443, label defaults to host
+
+Environment:
+  HOSTS_FILE   path to inventory file  (default: /root/.secrets/cert-audit.hosts)
+  WARN_DAYS    warning threshold in days (default: 30)
+  CRIT_DAYS    critical threshold in days (default: 14)
+  TIMEOUT      openssl connect timeout in seconds (default: 10)
+
+Exit codes:
+  0   all certificates OK
+  1   at least one certificate expiring soon (< WARN_DAYS)
+  2   at least one certificate expired, critical, or unreachable
+
+Examples:
+  $(basename "$0")
+  $(basename "$0") remote.example.com:1234
+  $(basename "$0") remote.example.com:1234:Freebox mail.example.com:443:Webmail
+  WARN_DAYS=45 $(basename "$0")
+EOF
+  exit 0
+fi
+
+if [[ $# -gt 0 ]]; then
+  # Arguments fournis : host[:port[:label]] ...
+  for arg in "$@"; do
+    IFS=: read -r host port label _rest <<< "$arg"
+    check_host "$host" "${port:-443}" "${label:-$host}"
+  done
+else
+  # Pas d'arguments : lecture du fichier d'inventaire
+  if [[ ! -r "$HOSTS_FILE" ]]; then
+    printf '[ERROR] Hosts file not readable: %s\n' "$HOSTS_FILE" >&2
+    exit 1
+  fi
+  while IFS=: read -r host port label _rest; do
+    [[ -z "${host:-}" || "${host:0:1}" == '#' ]] && continue
+    check_host "$host" "${port:-443}" "${label:-$host}"
+  done < "$HOSTS_FILE"
+fi
 
 printf '\n'
 
