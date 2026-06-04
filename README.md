@@ -218,4 +218,4 @@ MIT — voir [LICENSE](LICENSE).
 
 ---
 
-*L'anonymisation des exemples, la mise en forme de la documentation et le script `audit-cert-expiry.sh` ont été réalisés avec l'assistance de Claude (Anthropic). Le code opérationnel, l'architecture et les choix techniques sont de l'auteur.*
+*L'anonymisation des données présentées, la mise en forme du code et des textes en vue de leur publication ainsi que le script `audit-cert-expiry.sh` ont été réalisées avec l'assistance de Claude (Anthropic). L'ensemble a été relu et validé par l'auteur avant publication. Le code réel, l'architecture et les choix techniques sont de l'auteur.*
