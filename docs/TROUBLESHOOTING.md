@@ -1,18 +1,18 @@
 # Troubleshooting
 
-## Certbot ne propose pas DNS-01
+## Certbot does not offer DNS-01
 
-Vérifier :
+Check:
 
 ```bash
 /opt/certbot-infomaniak/bin/certbot plugins
 ```
 
-Le plugin `dns-infomaniak` doit apparaître.
+The `dns-infomaniak` plugin must appear.
 
 ## cannot authenticate
 
-Tester l’API Infomaniak :
+Test the Infomaniak API:
 
 ```bash
 TOKEN="$(awk -F'= *' '/dns_infomaniak_token/ {print $2}' /root/.secrets/certbot/infomaniak.ini)"
@@ -23,11 +23,11 @@ curl -sS \
   "https://api.infomaniak.com/2/zones/example.tld"
 ```
 
-Si `not_authorized`, le token n’a pas les droits sur la zone.
+If `not_authorized`, the token does not have rights on the zone.
 
-## NXDOMAIN sur _acme-challenge
+## NXDOMAIN on _acme-challenge
 
-Utiliser :
+Use:
 
 ```bash
 /opt/certbot-infomaniak/bin/certbot certonly \
@@ -39,7 +39,7 @@ Utiliser :
   -d mysite.example.com
 ```
 
-Pendant la pause :
+During the pause:
 
 ```bash
 dig TXT _acme-challenge.mysite.example.com @nsany1.infomaniak.com
@@ -49,7 +49,7 @@ dig TXT _acme-challenge.mysite.example.com
 
 ## Freebox API invalid_token
 
-Réautoriser l’application Freebox et mettre à jour :
+Re-authorize the Freebox application and update:
 
 ```text
 /root/.secrets/freebox/freebox-cert.env
@@ -57,28 +57,28 @@ Réautoriser l’application Freebox et mettre à jour :
 
 ## domain_list command not found
 
-Il faut sourcer la librairie :
+You must source the library:
 
 ```bash
 source /opt/freebox-api/fbx-delta-nba_bash_api.sh
 ```
 
-## Script bloqué sur detect_term_bg_color
+## Script stuck on detect_term_bg_color
 
-La librairie Freebox utilise des variables non initialisées et retourne non-zéro 
-au chargement. Le script `deploy-cert-to-freebox` désactive `set -e` autour du 
-`source` et n'utilise pas `set -u` pour cette raison.
+The Freebox library uses uninitialized variables and returns non-zero
+on load. The `deploy-cert-to-freebox` script disables `set -e` around the
+`source` and does not use `set -u` for this reason.
 
-## openssl depuis le LAN retourne connection refused
+## openssl from the LAN returns connection refused
 
-Le port externe Freebox OS peut ne pas être joignable depuis le LAN à cause du NAT loopback.
-Tester depuis une machine externe.
+The Freebox OS external port may not be reachable from the LAN because of NAT loopback.
+Test from an external machine.
 
-## domain_addcert retourne une erreur "exists"
+## domain_addcert returns an "exists" error
 
-L'API Freebox expose `domain/owned/{id}/import_cert/` en POST uniquement — il n'existe pas d'endpoint de mise à jour. Tenter d'importer un certificat RSA sur un domaine qui en a déjà un retourne une erreur "exists".
+The Freebox API exposes `domain/owned/{id}/import_cert/` as POST only; there is no update endpoint. Trying to import an RSA certificate on a domain that already has one returns an "exists" error.
 
-Le script `deploy-cert-to-freebox` gère ce cas en supprimant puis recréant le domaine avant chaque import :
+The `deploy-cert-to-freebox` script handles this case by deleting then recreating the domain before each import:
 
 ```bash
 domain_del id="mysite.example.com"
@@ -86,20 +86,20 @@ domain_add id="mysite.example.com"
 domain_addcert id="mysite.example.com" key_type="rsa" ...
 ```
 
-Si l'erreur persiste en mode manuel, vérifier que `domain_del` a bien retourné 0 avant de relancer `domain_add`.
+If the error persists in manual mode, check that `domain_del` returned 0 before running `domain_add` again.
 
-## Mauvais certificat encore visible
+## Wrong certificate still showing
 
-Vérifier :
+Check:
 
 ```bash
 domain_list
 ```
 
-Le champ `rsa` indique le nombre de jours de validité restants du certificat importé. La ligne doit ressembler à :
+The `rsa` field shows the number of remaining validity days of the imported certificate. The line should look like:
 
 ```text
-owner: user   type: custom   rsa: <jours>   id default: mysite.example.com
+owner: user   type: custom   rsa: <days>   id default: mysite.example.com
 ```
 
-Si le certificat externe reste `*.fbxos.fr`, vérifier que le domaine custom est bien défini comme domaine par défaut dans Freebox OS.
+If the external certificate remains `*.fbxos.fr`, check that the custom domain is set as the default domain in Freebox OS.
