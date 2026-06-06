@@ -1,13 +1,13 @@
-# Mode opératoire
+# Operating procedure
 
-## 1. Préparer la machine interne
+## 1. Prepare the internal machine
 
 ```bash
 apt update
 apt install -y curl openssl jq coreutils file python3-venv python3-pip dnsutils
 ```
 
-## 2. Installer Certbot dans un venv
+## 2. Install Certbot in a venv
 
 ```bash
 python3 -m venv /opt/certbot-infomaniak
@@ -15,13 +15,13 @@ python3 -m venv /opt/certbot-infomaniak
 /opt/certbot-infomaniak/bin/pip install certbot certbot-dns-infomaniak
 ```
 
-## 3. Installer la librairie Freebox API
+## 3. Install the Freebox API library
 
 ```bash
 scripts/install-freebox-api-lib.sh
 ```
 
-## 4. Créer les secrets
+## 4. Create the secrets
 
 ```bash
 mkdir -p /root/.secrets/certbot /root/.secrets/freebox
@@ -34,9 +34,9 @@ chmod 600 /root/.secrets/certbot/infomaniak.ini
 chmod 600 /root/.secrets/freebox/freebox-cert.env
 ```
 
-Éditer les deux fichiers.
+Edit both files.
 
-## 5. Tester Infomaniak
+## 5. Test Infomaniak
 
 ```bash
 TOKEN="$(awk -F'= *' '/dns_infomaniak_token/ {print $2}' /root/.secrets/certbot/infomaniak.ini)"
@@ -47,15 +47,15 @@ curl -sS \
   "https://api.infomaniak.com/2/zones/example.tld"
 ```
 
-## 6. Autoriser l’application Freebox
+## 6. Authorize the Freebox application
 
 ```bash
 scripts/authorize-freebox-app.sh fr.example.freebox.certdeploy "Freebox Cert Deploy" "1.0.0" "linux-host"
 ```
 
-Valider côté Freebox.
+Validate on the Freebox side.
 
-## 7. Tester le login Freebox
+## 7. Test the Freebox login
 
 ```bash
 debug=0
@@ -67,7 +67,7 @@ login_freebox "$FREEBOX_APP_ID" "$FREEBOX_APP_TOKEN" --access
 domain_list
 ```
 
-## 8. Émettre le certificat
+## 8. Issue the certificate
 
 ```bash
 export INFOMANIAK_API_TOKEN="$(
@@ -83,13 +83,13 @@ export INFOMANIAK_API_TOKEN="$(
   -d mysite.example.com
 ```
 
-## 9. Déployer dans la Freebox
+## 9. Deploy to the Freebox
 
 ```bash
 /usr/local/sbin/deploy-cert-to-freebox
 ```
 
-## 10. Tester depuis l’extérieur
+## 10. Test from outside
 
 ```bash
 echo | openssl s_client \
@@ -99,13 +99,13 @@ echo | openssl s_client \
 | openssl x509 -noout -subject -issuer -dates -serial
 ```
 
-## 11. Activer le renouvellement
+## 11. Enable renewal
 
 ```bash
 /usr/local/sbin/certbot-renew-infomaniak --dry-run
 ```
 
-Puis cron :
+Then cron:
 
 ```cron
 17 3 * * * /usr/local/sbin/certbot-renew-infomaniak --quiet
