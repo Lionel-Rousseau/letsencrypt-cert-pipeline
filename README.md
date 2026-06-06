@@ -1,26 +1,26 @@
-# Let's Encrypt TLS Pipeline : Certbot DNS-01 → Freebox OS
+# Let's Encrypt TLS Pipeline: Certbot DNS-01 → Freebox OS
 
-Renouvellement automatique d'un certificat Let's Encrypt et déploiement vers Freebox OS, sans intervention manuelle.
-Code issu d'un cas réel d'exploitation, anonymisé et adapté pour publication.
+Automatic renewal of a Let's Encrypt certificate and deployment to Freebox OS, with no manual intervention.
+Code from a real operational case, anonymized and adapted for publication.
 
 ```
 Certbot (DNS-01 via Infomaniak)
-→ certificat RSA Let's Encrypt
-→ import dans Freebox OS (fbx-delta-nba_bash_api.sh)
-→ vérification TLS depuis l'extérieur
+→ Let's Encrypt RSA certificate
+→ import into Freebox OS (fbx-delta-nba_bash_api.sh)
+→ TLS verification from outside
 ```
 
-> ⚠️ L'import certificat Freebox repose sur des endpoints non documentés de l'API. Une mise à jour Freebox OS peut casser ce workflow.
+> ⚠️ The Freebox certificate import relies on undocumented API endpoints. A Freebox OS update may break this workflow.
 
-## Contexte testé
+## Tested context
 
-| Élément | Valeur |
+| Item | Value |
 |---|---|
 | DNS | Infomaniak |
-| Challenge ACME | DNS-01 |
-| Certbot | venv Python isolé |
-| Certificat | RSA 2048 bits |
-| API Freebox | fbx-delta-nba_bash_api.sh |
+| ACME challenge | DNS-01 |
+| Certbot | Isolated Python venv |
+| Certificate | RSA 2048 bits |
+| Freebox API | fbx-delta-nba_bash_api.sh |
 | Machine | Raspberry Pi / Debian LAN |
 
 ## Structure
@@ -32,37 +32,37 @@ letsencrypt-cert-pipeline/
 │   ├── infomaniak.ini.example
 │   └── cert-audit.hosts.example
 ├── scripts/
-│   ├── install-prereqs.sh         # setup ponctuel
-│   ├── install-freebox-api-lib.sh # setup ponctuel
-│   ├── authorize-freebox-app.sh   # setup ponctuel
-│   ├── certbot-renew-infomaniak   # installé dans sbin/, appelé par cron
-│   ├── deploy-cert-to-freebox     # installé dans sbin/, appelé par cron
-│   ├── check-freebox-cert         # installé dans sbin/, appelé par cron
-│   └── audit-cert-expiry.sh       # audit à la demande
+│   ├── install-prereqs.sh         # one-off setup
+│   ├── install-freebox-api-lib.sh # one-off setup
+│   ├── authorize-freebox-app.sh   # one-off setup
+│   ├── certbot-renew-infomaniak   # installed in sbin/, called by cron
+│   ├── deploy-cert-to-freebox     # installed in sbin/, called by cron
+│   ├── check-freebox-cert         # installed in sbin/, called by cron
+│   └── audit-cert-expiry.sh       # on-demand audit
 └── docs/
     ├── OPERATING_PROCEDURE.md
     └── TROUBLESHOOTING.md
 ```
 
-Les scripts destinés à être installés dans `/usr/local/sbin/` et appelés en tant que commandes système n'ont pas d'extension (convention Unix). Les scripts à usage ponctuel conservent `.sh`.
+Scripts meant to be installed in `/usr/local/sbin/` and called as system commands have no extension (Unix convention). One-off scripts keep the `.sh` extension.
 
 ## Installation
 
-### Dépendances système
+### System dependencies
 
 ```bash
 sudo scripts/install-prereqs.sh
 ```
 
-### Librairie Freebox API
+### Freebox API library
 
-Télécharge [fbx-delta-nba_bash_api.sh](https://github.com/nbanb/fbx-delta-nba_bash_api.sh) depuis le dépôt d'origine et l'installe dans `/opt/freebox-api/`.
+Downloads [fbx-delta-nba_bash_api.sh](https://github.com/nbanb/fbx-delta-nba_bash_api.sh) from the original repository and installs it in `/opt/freebox-api/`.
 
 ```bash
 sudo scripts/install-freebox-api-lib.sh
 ```
 
-> Le script télécharge un fichier Bash tiers sans vérification de signature. Consulter le dépôt source avant exécution dans un environnement sensible.
+> The script downloads a third-party Bash file without signature verification. Review the source repository before running it in a sensitive environment.
 
 ### Secrets
 
@@ -79,15 +79,15 @@ chmod 600 /root/.secrets/freebox/freebox-cert.env
 vi /root/.secrets/freebox/freebox-cert.env
 ```
 
-### Token Freebox
+### Freebox token
 
 ```bash
 scripts/authorize-freebox-app.sh
 ```
 
-Valider sur l'écran de la Freebox, puis coller `MY_APP_TOKEN` dans `freebox-cert.env`.
+Validate on the Freebox screen, then paste `MY_APP_TOKEN` into `freebox-cert.env`.
 
-## Premier certificat
+## First certificate
 
 ```bash
 export INFOMANIAK_API_TOKEN="$(
@@ -103,13 +103,13 @@ export INFOMANIAK_API_TOKEN="$(
   -d mysite.example.com
 ```
 
-## Déploiement
+## Deployment
 
 ```bash
 /usr/local/sbin/deploy-cert-to-freebox
 ```
 
-Vérification externe manuelle :
+Manual external verification:
 
 ```bash
 echo | openssl s_client \
@@ -119,18 +119,18 @@ echo | openssl s_client \
 | openssl x509 -noout -subject -issuer -dates -serial
 ```
 
-Les logs de déploiement sont écrits dans `/var/log/freebox-cert/` — un fichier par exécution, horodaté :
+Deployment logs are written to `/var/log/freebox-cert/`, one timestamped file per run:
 
 ```bash
 ls -lt /var/log/freebox-cert/
 tail -50 /var/log/freebox-cert/deploy-$(ls -t /var/log/freebox-cert/ | head -1)
 ```
 
-## Audit multi-hôtes
+## Multi-host audit
 
-Vérifie l'expiration de tous les certificats TLS du périmètre en une commande.
+Checks the expiry of every TLS certificate in the perimeter with a single command.
 
-Créer le fichier d'inventaire (optionnel) :
+Create the inventory file (optional):
 
 ```bash
 cp config/cert-audit.hosts.example /root/.secrets/cert-audit.hosts
@@ -138,20 +138,20 @@ chmod 600 /root/.secrets/cert-audit.hosts
 vi /root/.secrets/cert-audit.hosts
 ```
 
-Format :
+Format:
 
 ```
 mysite.example.com:1234:Freebox OS
 mail.example.tld:443:Webmail
 ```
 
-Lancer l'audit :
+Run the audit:
 
 ```bash
 HOSTS_FILE=/root/.secrets/cert-audit.hosts scripts/audit-cert-expiry.sh
 ```
 
-Exemple de sortie :
+Example output:
 
 ```
 HOST                                       PORT   EXPIRES IN   STATUS
@@ -160,62 +160,62 @@ Freebox OS                                 1234   72d          OK
 Webmail                                    443    8d           WARN
 ```
 
-Code de retour : `0` OK · `1` WARN (< 30 jours) · `2` CRIT (< 14 jours) ou erreur.
+Return code: `0` OK · `1` WARN (< 30 days) · `2` CRIT (< 14 days) or error.
 
 
-Les seuils sont configurables :
+The thresholds are configurable:
 
 ```bash
 WARN_DAYS=45 CRIT_DAYS=10 HOSTS_FILE=... scripts/audit-cert-expiry.sh
 ```
 
-## Renouvellement automatique
+## Automatic renewal
 
-Test :
+Test:
 
 ```bash
 /usr/local/sbin/certbot-renew-infomaniak --dry-run
 ```
 
-Cron :
+Cron:
 
 ```cron
 17 3 * * * /usr/local/sbin/certbot-renew-infomaniak --quiet
 ```
 
-## Sécurité
+## Security
 
-Ne jamais versionner les fichiers réels :
+Never commit the real files:
 
 ```
 /root/.secrets/certbot/infomaniak.ini
 /root/.secrets/freebox/freebox-cert.env
 ```
 
-Le `.gitignore` exclut `*.env` et `*.ini`. Les fichiers `.example` du dossier `config/` ne correspondent pas à ces fichiers et sont versionnés normalement.
+The `.gitignore` excludes `*.env` and `*.ini`. The `.example` files in the `config/` folder do not match these patterns and are committed normally.
 
-## Dépendances externes
+## External dependencies
 
-| Composant | Source | Licence | Rôle |
+| Component | Source | License | Role |
 |---|---|---|---|
-| `fbx-delta-nba_bash_api.sh` | [nbanb/fbx-delta-nba_bash_api.sh](https://github.com/nbanb/fbx-delta-nba_bash_api.sh) | GPLv3 | Bibliothèque Bash d'accès à l'API Freebox OS |
-| `certbot-dns-infomaniak` | [Infomaniak/certbot-dns-infomaniak](https://github.com/Infomaniak/certbot-dns-infomaniak) | Apache-2.0 | Plugin Certbot pour le challenge DNS-01 via Infomaniak |
+| `fbx-delta-nba_bash_api.sh` | [nbanb/fbx-delta-nba_bash_api.sh](https://github.com/nbanb/fbx-delta-nba_bash_api.sh) | GPLv3 | Bash library for accessing the Freebox OS API |
+| `certbot-dns-infomaniak` | [Infomaniak/certbot-dns-infomaniak](https://github.com/Infomaniak/certbot-dns-infomaniak) | Apache-2.0 | Certbot plugin for the DNS-01 challenge via Infomaniak |
 
-`fbx-delta-nba_bash_api.sh` expose des fonctions non documentées de l'API Freebox OS. Le script `install-freebox-api-lib.sh` la télécharge depuis le dépôt d'origine. Vérifier l'intégrité du fichier après téléchargement si l'environnement l'exige.
+`fbx-delta-nba_bash_api.sh` exposes undocumented functions of the Freebox OS API. The `install-freebox-api-lib.sh` script downloads it from the original repository. Verify the file integrity after download if your environment requires it.
 
-## Limites
+## Limitations
 
-- Le remplacement d'un certificat existant nécessite de supprimer puis recréer le domaine Freebox — l'API n'expose pas d'endpoint de mise à jour. Le script gère ce cas automatiquement.
-- La vérification TLS depuis le LAN échoue souvent à cause du NAT loopback, il est préferrable de tester depuis l'extérieur.
-- RSA uniquement, ECDSA non supporté côté Freebox pour l'instant.
-- Les secrets sont stockés sous `/root/.secrets/` ce qui est acceptable à une machine LAN dédiée à cet usage. Sur une infrastructure multi-utilisateurs, préférer un utilisateur système dédié avec accès sudo limité aux seules commandes nécessaires.
-
----
-
-## Licence
-
-MIT — voir [LICENSE](LICENSE).
+- Replacing an existing certificate requires deleting then recreating the Freebox domain, as the API exposes no update endpoint. The script handles this case automatically.
+- TLS verification from the LAN often fails because of NAT loopback, so it is better to test from outside.
+- RSA only; ECDSA is not yet supported on the Freebox side.
+- Secrets are stored under `/root/.secrets/`, which is acceptable on a LAN machine dedicated to this use. On a multi-user infrastructure, prefer a dedicated system user with sudo access limited to the required commands only.
 
 ---
 
-*L'anonymisation des données présentées, la mise en forme du code et des textes en vue de leur publication ainsi que le script `audit-cert-expiry.sh` ont été réalisées avec l'assistance de Claude (Anthropic). L'ensemble a été relu et validé par l'auteur avant publication. Le code réel, l'architecture et les choix techniques sont de l'auteur.*
+## License
+
+MIT - see [LICENSE](LICENSE).
+
+---
+
+*The anonymization of the data shown here, the formatting of the code and text for publication, and the `audit-cert-expiry.sh` script were produced with the assistance of Claude (Anthropic). Everything was reviewed and validated by the author before publication. The actual code, architecture and technical choices are the author's own.*
